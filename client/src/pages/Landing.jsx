@@ -28,8 +28,11 @@ export default function Landing() {
     localStorage.setItem('landing-theme', theme);
   }, [theme]);
 
-  // Parallax mouse effect (desktop only)
+  // Parallax mouse effect & Scroll reset
   useEffect(() => {
+    // Ensure page always starts at the top
+    window.scrollTo(0, 0);
+
     const handleMouseMove = (e) => {
       if (!heroRef.current || window.innerWidth < 768) return;
       const { clientX, clientY } = e;
