@@ -8,6 +8,16 @@ Multiple users can edit the same document simultaneously, see live changes, leav
 
 ---
 
+## 🎥 Project Demo
+
+> **Note:** Watch how SyncWrite handles real-time editing, version history, and comments!
+
+<div align="center">
+  <video src="collab-doc.mp4" width="100%" controls="controls"></video>
+</div>
+
+---
+
 ## ✨ Features
 
 - 🔄 **Real-time Collaboration** — Multiple users can edit the same document simultaneously using [Yjs](https://yjs.dev/) CRDT and WebSockets

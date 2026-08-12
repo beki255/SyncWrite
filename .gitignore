@@ -1,7 +1,7 @@
 # Node
 node_modules/
 
-# Environment
+# Local Env files
 .env
 .env.local
 .env.*.local
