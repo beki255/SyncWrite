@@ -282,12 +282,13 @@
   --mouse-y: 0px;
   position: relative;
   min-height: 100vh;
+  box-sizing: border-box;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  padding: 7rem 1.5rem 4rem;
-  gap: 3rem;
+  padding: 6rem 1.5rem 2rem;
+  gap: 2rem;
   overflow: hidden;
   /* Gradient mesh background */
   background:
