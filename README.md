@@ -138,25 +138,276 @@ The app will be available at **http://localhost:5173**
 
 ---
 
-## 🔌 API Overview
+## 🔌 API Documentation
 
-| Method | Endpoint                          | Description                    |
-|--------|-----------------------------------|--------------------------------|
-| POST   | `/api/auth/register`              | Register a new user            |
-| POST   | `/api/auth/login`                 | Login with email & password    |
-| POST   | `/api/auth/google`                | Login with Google OAuth        |
-| GET    | `/api/documents`                  | Get all user documents         |
-| POST   | `/api/documents`                  | Create a new document          |
-| GET    | `/api/documents/:id`              | Get a single document          |
-| PUT    | `/api/documents/:id`              | Update document content        |
-| DELETE | `/api/documents/:id`              | Delete a document              |
-| POST   | `/api/documents/:id/share`        | Share document with a user     |
-| DELETE | `/api/documents/:id/share/:userId`| Remove a collaborator          |
-| POST   | `/api/documents/:id/versions`     | Save a document version        |
-| DELETE | `/api/documents/:id/versions/:vid`| Delete a document version      |
-| GET    | `/api/comments/:docId`            | Get comments for a document    |
-| POST   | `/api/comments`                   | Add a comment                  |
-| GET    | `/api/notifications`              | Get user notifications         |
+> All protected routes require a `Bearer` token in the `Authorization` header:
+> ```
+> Authorization: Bearer <your_jwt_token>
+> ```
+
+---
+
+### 🔐 Auth — `/api/auth`
+
+#### `POST /api/auth/register`
+Register a new user with email and password.
+
+**Request Body:**
+```json
+{ "name": "Beki", "email": "beki@example.com", "password": "secret123" }
+```
+**Response:** `201`
+```json
+{ "user": { "id": "...", "name": "Beki", "email": "beki@example.com" }, "token": "<jwt>" }
+```
+
+---
+
+#### `POST /api/auth/login`
+Login with email and password.
+
+**Request Body:**
+```json
+{ "email": "beki@example.com", "password": "secret123" }
+```
+**Response:** `200`
+```json
+{ "user": { "id": "...", "name": "Beki", "email": "beki@example.com" }, "token": "<jwt>" }
+```
+
+---
+
+#### `POST /api/auth/google`
+Login or register using a Google OAuth ID token.
+
+**Request Body:**
+```json
+{ "token": "<google_id_token>" }
+```
+**Response:** `200` — same as login response.
+
+---
+
+#### `GET /api/auth/me` 🔒
+Get the currently authenticated user's profile.
+
+**Response:** `200`
+```json
+{ "user": { "id": "...", "name": "Beki", "email": "beki@example.com" } }
+```
+
+---
+
+#### `PUT /api/auth/me/profile` 🔒
+Update the authenticated user's display name.
+
+**Request Body:**
+```json
+{ "name": "New Name" }
+```
+
+---
+
+#### `PUT /api/auth/me/password` 🔒
+Change the authenticated user's password.
+
+**Request Body:**
+```json
+{ "currentPassword": "old_pass", "newPassword": "new_pass" }
+```
+
+---
+
+### 📄 Documents — `/api/documents`
+
+#### `GET /api/documents` 🔒
+Get all documents owned by or shared with the authenticated user.
+
+**Response:** Array of document objects, sorted by `updatedAt` descending.
+
+---
+
+#### `POST /api/documents` 🔒
+Create a new document.
+
+**Request Body:**
+```json
+{ "title": "My New Doc" }
+```
+**Response:** `201` — the created document object.
+
+---
+
+#### `GET /api/documents/:id` 🔒
+Get a single document by ID. Requires owner or collaborator access.
+
+---
+
+#### `PUT /api/documents/:id` 🔒
+Update document title or content. Requires **Editor** role or ownership.
+
+**Request Body:**
+```json
+{ "title": "Updated Title", "data": { } }
+```
+
+---
+
+#### `DELETE /api/documents/:id` 🔒
+Delete a document. **Owner only.**
+
+---
+
+#### `POST /api/documents/:id/share` 🔒
+Share a document with another user by email. **Owner only.**
+
+**Request Body:**
+```json
+{ "email": "friend@example.com", "role": "Editor" }
+```
+> `role` can be `"Editor"`, `"Commenter"`, or `"Viewer"`
+
+---
+
+#### `DELETE /api/documents/:id/share/:userId` 🔒
+Remove a collaborator from a document. **Owner only.**
+
+---
+
+#### `POST /api/documents/:id/versions` 🔒
+Save the current document state as a named version. Requires **Editor** role.
+
+**Request Body:**
+```json
+{ "data": { } }
+```
+
+---
+
+#### `DELETE /api/documents/:id/versions/:versionId` 🔒
+Delete a saved version. Requires **Editor** role.
+
+---
+
+### 💬 Comments — `/api/comments`
+
+#### `GET /api/comments/:documentId` 🔒
+Get all comments for a document. Requires access to the document.
+
+---
+
+#### `POST /api/comments/:documentId` 🔒
+Add a comment to a document. **Viewers cannot comment.**
+
+**Request Body:**
+```json
+{ "text": "Great point here!" }
+```
+
+---
+
+#### `POST /api/comments/:documentId/:commentId/reply` 🔒
+Reply to an existing comment. **Viewers cannot reply.**
+
+**Request Body:**
+```json
+{ "text": "I agree!" }
+```
+
+---
+
+#### `PUT /api/comments/:documentId/:commentId/resolve` 🔒
+Toggle a comment's resolved status. **Viewers cannot resolve.**
+
+---
+
+#### `DELETE /api/comments/:documentId/:commentId` 🔒
+Delete a comment. Only the **comment author** or **document owner** can delete.
+
+---
+
+### 🔔 Notifications — `/api/notifications`
+
+#### `GET /api/notifications` 🔒
+Get all notifications for the authenticated user, sorted by newest first.
+
+---
+
+#### `PUT /api/notifications/:id/read` 🔒
+Mark a single notification as read.
+
+---
+
+#### `PUT /api/notifications/read-all` 🔒
+Mark all of the user's notifications as read.
+
+---
+
+## 🗄️ Database Schema
+
+The app uses **MongoDB** with **Mongoose**. Below are the four collections and their fields.
+
+---
+
+### `users`
+
+| Field       | Type     | Required | Notes                                  |
+|-------------|----------|----------|----------------------------------------|
+| `name`      | String   | ✅       |                                        |
+| `email`     | String   | ✅       | Unique                                 |
+| `password`  | String   | ❌       | Hashed with bcrypt. Optional for Google OAuth users |
+| `googleId`  | String   | ❌       | Unique, sparse. Only for Google users  |
+| `createdAt` | Date     | auto     | Mongoose timestamp                     |
+| `updatedAt` | Date     | auto     | Mongoose timestamp                     |
+
+---
+
+### `documents`
+
+| Field            | Type       | Required | Notes                                         |
+|------------------|------------|----------|-----------------------------------------------|
+| `title`          | String     | ✅       | Default: `'Untitled Document'`                |
+| `owner`          | ObjectId   | ✅       | Ref → `User`                                  |
+| `data`           | Object     | ❌       | Stores Yjs document state                     |
+| `collaborators`  | Array      | ❌       | List of `{ user: ObjectId, role: String }`    |
+| `collaborators.user` | ObjectId | —      | Ref → `User`                                  |
+| `collaborators.role` | String | —       | Enum: `'Viewer'`, `'Commenter'`, `'Editor'`   |
+| `versions`       | Array      | ❌       | List of saved snapshots                       |
+| `versions.data`  | Object     | —        | Snapshot content                              |
+| `versions.createdBy` | ObjectId | —     | Ref → `User`                                  |
+| `versions.createdAt` | Date   | —        | Default: `Date.now`                           |
+| `createdAt`      | Date       | auto     | Mongoose timestamp                            |
+| `updatedAt`      | Date       | auto     | Mongoose timestamp                            |
+
+---
+
+### `comments`
+
+| Field              | Type     | Required | Notes                              |
+|--------------------|----------|----------|------------------------------------|n| `documentId`       | ObjectId | ✅       | Ref → `Document`                   |
+| `text`             | String   | ✅       |                                    |
+| `createdBy`        | ObjectId | ✅       | Ref → `User`                       |
+| `resolved`         | Boolean  | ❌       | Default: `false`                   |
+| `replies`          | Array    | ❌       | List of reply objects              |
+| `replies.text`     | String   | ✅       |                                    |
+| `replies.createdBy`| ObjectId | ✅       | Ref → `User`                       |
+| `replies.createdAt`| Date     | —        | Default: `Date.now`                |
+| `createdAt`        | Date     | auto     | Mongoose timestamp                 |
+| `updatedAt`        | Date     | auto     | Mongoose timestamp                 |
+
+---
+
+### `notifications`
+
+| Field       | Type     | Required | Notes                   |
+|-------------|----------|----------|-------------------------|
+| `recipient` | ObjectId | ✅       | Ref → `User`            |
+| `sender`    | ObjectId | ✅       | Ref → `User`            |
+| `document`  | ObjectId | ✅       | Ref → `Document`        |
+| `message`   | String   | ✅       | Human-readable message  |
+| `read`      | Boolean  | ❌       | Default: `false`        |
+| `createdAt` | Date     | auto     | Mongoose timestamp      |
+| `updatedAt` | Date     | auto     | Mongoose timestamp      |
 
 ---
 
